@@ -1,22 +1,28 @@
 "use client";
 
 import React, { useState } from 'react';
+
+import { useRouter } from 'next/navigation';
+import { authClient } from '@/lib/auth-client';
 import Link from 'next/link';
 
 export default function SignupPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
+  
+  // নতুন স্টেটসমূহ
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(''); // আগের এরর রিসেট করা হচ্ছে
-
-    // পাসওয়ার্ড ম্যাচিং চেক
+    setError(''); 
+    
     if (password !== confirmPassword) {
       setError('Passwords do not match!');
       return;
@@ -24,8 +30,30 @@ export default function SignupPage() {
 
     if (!agreeTerms) return;
 
-    // Better Auth registration handling logic here
-    console.log("Registering user:", { name, email, password });
+    setLoading(true); 
+
+    try {
+      const { data, error: authError } = await authClient.signUp.email({
+          email, 
+          password, 
+          name, 
+        //   callbackURL: "/dashboard" 
+      });
+
+      if (authError) {
+        // Better Auth থেকে আসা এরর মেসেজ স্টেটে সেট করা হচ্ছে
+        setError(authError.message || 'Something went wrong. Please try again.');
+      } else if (data) {
+
+        console.log("Signup success:", data);
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      setError('An unexpected error occurred.');
+      console.error(err);
+    } finally {
+      setLoading(false); 
+    }
   };
 
   return (
@@ -43,10 +71,10 @@ export default function SignupPage() {
           <p className="text-sm text-slate-500">Get started with encrypted file sharing</p>
         </div>
 
-        {/* Error Alert Block */}
+        {/* Error Alert Block (পাসওয়ার্ড ম্যাচিং বা Better Auth এরর উভয়ই এখানে দেখাবে) */}
         {error && (
           <div className="p-3 text-xs font-semibold bg-red-50 text-[#EF4444] border border-red-100 rounded-lg flex items-center space-x-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4 shrink-0">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
             </svg>
             <span>{error}</span>
@@ -62,10 +90,11 @@ export default function SignupPage() {
             <input 
               type="text"
               required
+              disabled={loading}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-[#1E293B] focus:outline-none focus:border-[#4F46E5] transition"
-              placeholder="John Doe"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-[#1E293B] focus:outline-none focus:border-[#4F46E5] transition disabled:opacity-60"
+              placeholder="Enter your name"
             />
           </div>
 
@@ -76,9 +105,10 @@ export default function SignupPage() {
             <input 
               type="email"
               required
+              disabled={loading}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-[#1E293B] focus:outline-none focus:border-[#4F46E5] transition"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-[#1E293B] focus:outline-none focus:border-[#4F46E5] transition disabled:opacity-60"
               placeholder="name@example.com"
             />
           </div>
@@ -92,9 +122,10 @@ export default function SignupPage() {
               <input 
                 type={showPassword ? "text" : "password"}
                 required
+                disabled={loading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-[#1E293B] focus:outline-none focus:border-[#4F46E5] transition"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-[#1E293B] focus:outline-none focus:border-[#4F46E5] transition disabled:opacity-60"
                 placeholder="••••••••"
               />
               <button 
@@ -119,9 +150,10 @@ export default function SignupPage() {
             <input 
               type={showPassword ? "text" : "password"}
               required
+              disabled={loading}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-[#1E293B] focus:outline-none focus:border-[#4F46E5] transition"
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-[#1E293B] focus:outline-none focus:border-[#4F46E5] transition disabled:opacity-60"
               placeholder="••••••••"
             />
           </div>
@@ -131,9 +163,10 @@ export default function SignupPage() {
             <input 
               type="checkbox"
               id="terms"
+              disabled={loading}
               checked={agreeTerms}
               onChange={(e) => setAgreeTerms(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-[#10B981] focus:ring-[#10B981]"
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-[#10B981] focus:ring-[#10B981] disabled:opacity-60"
             />
             <label htmlFor="terms" className="text-xs text-slate-500 leading-normal">
               I agree to the{' '}
@@ -143,12 +176,23 @@ export default function SignupPage() {
             </label>
           </div>
 
+          {/* Submit Button with Loading State */}
           <button 
             type="submit" 
-            disabled={!agreeTerms}
-            className="w-full py-2.5 bg-[#10B981] hover:bg-[#059669] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg text-sm transition shadow-sm"
+            disabled={!agreeTerms || loading}
+            className="w-full py-2.5 bg-[#10B981] hover:bg-[#059669] disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg text-sm transition shadow-sm flex items-center justify-center space-x-2"
           >
-            Create Account
+            {loading ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span>Creating Account...</span>
+              </>
+            ) : (
+              <span>Create Account</span>
+            )}
           </button>
         </form>
 

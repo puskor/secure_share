@@ -1,11 +1,16 @@
 import Link from "next/link";
-import React from "react";
+import LogoutButton from "./LogoutButton";
+import { getSession } from "@/lib/method/main";
 
-export default function Navbar() {
+export default async function Navbar() {
+  const session = await getSession();
+
+  // console.log(session)
+
   return (
-    <nav className="flex items-center justify-between px-6 py-4 md:px-20 mx-auto  bg-white">
-      {/* Logo & Rating */}
-      <Link href={"/"} className="flex items-center space-x-2">
+    <nav className="flex items-center justify-between px-6 py-4 md:px-20 mx-auto bg-white">
+      {/* Logo */}
+      <Link href="/" className="flex items-center space-x-2">
         <div className="flex items-center justify-center w-8 h-8 rounded bg-[#4F46E5] text-white">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -22,36 +27,53 @@ export default function Navbar() {
             />
           </svg>
         </div>
+
         <span className="text-xl font-bold text-[#1E293B]">SecureShare</span>
-        <span className="text-sm hidden md:block text-[#F59E0B]">
+
+        <span className="hidden md:block text-sm text-[#F59E0B]">
           ⭐⭐⭐⭐⭐
         </span>
       </Link>
 
-      {/* Nav Links */}
+      {/* Navigation */}
       <div className="hidden md:flex items-center space-x-6 text-sm font-medium text-[#1E293B]">
         <a href="#features" className="hover:text-[#4F46E5] transition">
           Features
         </a>
+
         <a href="#security" className="hover:text-[#4F46E5] transition">
           Security
         </a>
+
         <a href="#pricing" className="hover:text-[#4F46E5] transition">
           Pricing
         </a>
       </div>
 
-      {/* Auth Buttons */}
-      <div className="flex items-center space-x-3 text-sm font-medium">
-        <button className="px-10 py-2 rounded text-white bg-[#4F46E5] hover:bg-[#4338CA] transition">
-          Start
-        </button>
-        <Link href={"/signup"}>
-          <button className="px-4 py-2 rounded text-white bg-[#10B981] hover:bg-[#059669] transition">
-            Create Account
-          </button>
-        </Link>
-      </div>
+      {/* Authentication */}
+      {session ? (
+        <div className="flex items-center gap-4">
+          <span className="hidden md:block  text-gray-600 text-xl font-bold">
+            {session?.user?.name}
+          </span>
+
+          <LogoutButton />
+        </div>
+      ) : (
+        <div className="flex items-center space-x-3 text-sm font-medium">
+          <Link href="/login">
+            <button className="px-10 py-2 rounded text-white bg-[#4F46E5] hover:bg-[#4338CA] transition">
+              Login
+            </button>
+          </Link>
+
+          <Link href="/signup">
+            <button className="px-4 py-2 rounded text-white bg-[#10B981] hover:bg-[#059669] transition">
+              Create Account
+            </button>
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }

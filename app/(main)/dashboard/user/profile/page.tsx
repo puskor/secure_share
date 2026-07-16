@@ -16,7 +16,7 @@ interface Post {
   _id: string;
   title?: string;
   content: string;
-  mediaUrls?: string[]; // 📸 আপনার ডাটাবেজ অনুযায়ী mediaUrls অ্যারে যুক্ত করা হলো
+  mediaUrls?: string[]; // 📸 আপনার ডাটাবেজ অনুযায়ী mediaUrls অ্যারে যুক্ত করা হলো
   visibility: PostVisibility;
   createdAt: string;
   authorDetails?: {
@@ -52,7 +52,7 @@ export default function ProfilePage() {
       try {
         let endpoint = '';
         
-        // ১. নিজের পোস্টগুলো নেওয়ার এপিআই এন্ডপয়েন্ট
+        // ১. নিজের পোস্টগুলো নেওয়ার এপিআই এন্ডপয়েন্ট
         if (activeTab === 'my_posts') {
           endpoint = `${serverBaseUrl}/api/posts/my-posts?userId=${currentUserId}`;
           const res = await fetch(endpoint);
@@ -63,7 +63,7 @@ export default function ProfilePage() {
           return;
         }
         
-        // ফ্রেন্ডস ম্যানেজমেন্ট ট্যাবগুলোর জন্য এন্ডপয়েন্ট
+        // ফ্রেন্ডস ম্যানেজমেন্ট ট্যাবগুলোর জন্য এন্ডপয়েন্ট
         if (activeTab === 'add_friend') {
           endpoint = `${serverBaseUrl}/api/users/unfriends?userId=${currentUserId}`;
         } else if (activeTab === 'my_friends') {
@@ -139,27 +139,58 @@ export default function ProfilePage() {
     }
   };
 
-  const handleCreatePost = (formData: { title: string; content: string; visibility: PostVisibility; passcode: string }) => {
+  // 🎯 🌟 টাইপস্ক্রিপ্ট এরর ফিক্সড ফাংশন (PostForm এর onSubmit এর সাথে টাইপ এলাইন করা হয়েছে)
+  const handleCreatePost = async (formData: { 
+    content: string; 
+    visibility: PostVisibility; 
+    passcode: string; 
+    mediaUrls: string[]; 
+  }) => {
     setLoading(true);
     setGeneratedUrl('');
     setCopied(false);
     setPostType(formData.visibility);
 
-    setTimeout(() => {
-      const uniqueId = Math.random().toString(36).substring(2, 9);
-      const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-      const shareUrl = `${origin}/share/${uniqueId}`;
+    try {
+      // ব্যাকএন্ড এপিআই-তে ডাটা পাঠানো হচ্ছে
+      const res = await fetch(`${serverBaseUrl}/api/posts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          postManId: currentUserId, // আপনার ব্যাকএন্ড এই ফিল্ড দিয়ে কুয়েরি করে
+          content: formData.content,
+          visibility: formData.visibility,
+          passcode: formData.visibility === 'private' ? formData.passcode : null,
+          mediaUrls: formData.mediaUrls || [],
+          createdAt: new Date()
+        })
+      });
 
-      setGeneratedUrl(shareUrl);
-      setLoading(false);
-      setIsFormOpen(false);
-      
-      // পোস্ট সফল হলে My Posts ট্যাব রিলোড করার জন্য স্টেট ট্রিগার
-      if (activeTab === 'my_posts') {
-        setActiveTab('');
-        setTimeout(() => setActiveTab('my_posts'), 10);
+      const result = await res.json();
+
+      if (result.success) {
+        // ইউনিক আইডি ও শেয়ারিং লিংক জেনারেশন
+        const uniqueId = result.insertedId || Math.random().toString(36).substring(2, 9);
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+        const shareUrl = `${origin}/share/${uniqueId}`;
+
+        setGeneratedUrl(shareUrl);
+        setIsFormOpen(false);
+        
+        // পোস্ট সফল হলে My Posts ট্যাব রিফ্রেশ লজিক
+        if (activeTab === 'my_posts') {
+          setActiveTab('');
+          setTimeout(() => setActiveTab('my_posts'), 10);
+        }
+      } else {
+        alert("Failed to save post in database.");
       }
-    }, 1200);
+    } catch (error) {
+      console.error("Error creating secure post:", error);
+      alert("Something went wrong while uploading the post.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copyToClipboard = () => {
@@ -173,14 +204,14 @@ export default function ProfilePage() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto pb-10">
       
-      {/* ১. প্রোফাইল কার্ড */}
+      {/* ১. প্রোফাইলカード */}
       <UserProfileCard 
         name={session?.user?.name || "Guest User"} 
         email={session?.user?.email || "Not Sign In"} 
         loading={isPending} 
       />
 
-      {/* ২. নতুন পোস্ট তৈরি করার এরিয়া (ট্যাব বোতামগুলোর উপরে) */}
+      {/* ২. নতুন পোস্ট তৈরি করার এরিয়া (ট্যাব বোতামগুলোর উপরে) */}
       {!isFormOpen && (
         <div className="bg-slate-50 border border-dashed border-slate-200 rounded-2xl p-6 text-center space-y-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -278,7 +309,7 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      {/* --- ৬. ডাইনামিক কন্টেন্ট রেন্ডারিং প্যানেল --- */}
+      {/* --- 🌍 ৬. ডাইনামিক কন্টেন্ট রেন্ডারিং প্যানেল --- */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
         
         {/* কন্টেন্ট লোডিং স্টেট */}
@@ -286,7 +317,7 @@ export default function ProfilePage() {
           <div className="text-center py-10 text-xs text-slate-400 animate-pulse">Loading content...</div>
         )}
 
-        {/* --- কন্ডিশন ১: MY POSTS ট্যাব রেন্ডারিং (mediaUrls থেকে ইমেজ সহ) --- */}
+        {/* --- কন্ডিশন ১: MY POSTS ট্যাব রেন্ডারিং --- */}
         {!tabLoading && activeTab === 'my_posts' && (
           <div className="space-y-4">
             {myPosts.length === 0 ? (
@@ -307,10 +338,8 @@ export default function ProfilePage() {
                       </span>
                     </div>
                     
-                    {/* পোস্ট ডেসক্রিপশন */}
                     <p className="text-xs font-semibold text-slate-700 leading-relaxed">{post.content}</p>
                     
-                    {/* 📸 মিডিয়া ইউআরএল অ্যারেতে ডাটা থাকলে প্রথমটি রেন্ডার করবে */}
                     {post.mediaUrls && post.mediaUrls.length > 0 && (
                       <div className="mt-2 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 max-h-64 flex items-center justify-center">
                         <img 
@@ -318,7 +347,7 @@ export default function ProfilePage() {
                           alt="Post Content Attachment" 
                           className="w-full h-full object-cover max-h-64"
                           onError={(e) => {
-                            e.currentTarget.style.display = 'none'; // কোনো কারণে লোড এরর হলে কম্পোনেন্টটি চলে যাবে
+                            e.currentTarget.style.display = 'none';
                           }}
                         />
                       </div>
@@ -356,7 +385,6 @@ export default function ProfilePage() {
                       <span className="text-xs font-semibold text-slate-700">{user.name}</span>
                     </div>
 
-                    {/* ট্যাব ভিত্তিক ডায়নামিক অ্যাকশন বাটন */}
                     {activeTab === 'add_friend' && (
                       <button
                         onClick={() => handleFollowUser(user._id)}

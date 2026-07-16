@@ -251,25 +251,7 @@ export default function ProfilePage() {
           <p className="text-xs text-slate-600">
             Anyone with this link {postType === 'private' && "and the passcode"} can access this block.
           </p>
-          <div className="flex items-center space-x-2 bg-white p-2 rounded-lg border border-emerald-100">
-            <input 
-              type="text" 
-              readOnly 
-              value={generatedUrl} 
-              className="flex-1 bg-transparent border-none text-xs font-semibold text-slate-700 outline-none select-all"
-            />
-            <button 
-              type="button" 
-              onClick={copyToClipboard}
-              className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
-                copied 
-                  ? 'bg-[#10B981] text-white' 
-                  : 'bg-emerald-100 text-[#10B981] hover:bg-[#10B981] hover:text-white'
-              }`}
-            >
-              {copied ? 'Copied!' : 'Copy'}
-            </button>
-          </div>
+          
         </div>
       )}
 

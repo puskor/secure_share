@@ -1,11 +1,12 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 export default function UserLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [isOpen, setIsOpen] = useState(false); // মোবাইল মেনু ওপেন/ক্লোজ স্টেট
 
   const navItems = [
     { href: '/dashboard/user/public', label: 'Public Files', icon: (
@@ -22,36 +23,66 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
     )},
   ];
 
-  return (
-    <div className="flex h-screen w-full bg-[#F8FAFC] overflow-hidden">
-      
-      {/* 1. Static Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-100 flex flex-col justify-between p-4 shrink-0 h-full">
-        <div className="space-y-6">
-          
+  const NavigationLinks = () => (
+    <nav className="space-y-1">
+      {navItems.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={() => setIsOpen(false)} // মোবাইল লিংকে ক্লিক করলে ড্রয়ার বন্ধ হবে
+            className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
+              isActive
+                ? 'bg-[#EEF2FF] text-[#4F46E5]'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-[#1E293B]'
+            }`}
+          >
+            <span className={isActive ? 'text-[#4F46E5]' : 'text-slate-400'}>
+              {item.icon}
+            </span>
+            <span>{item.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
 
-          {/* Navigation Links with Active States */}
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg text-sm font-semibold transition ${
-                    isActive
-                      ? 'bg-[#EEF2FF] text-[#4F46E5]'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-[#1E293B]'
-                  }`}
-                >
-                  <span className={isActive ? 'text-[#4F46E5]' : 'text-slate-400'}>
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+  return (
+    <div className="flex flex-col lg:flex-row h-screen w-full bg-[#F8FAFC] overflow-hidden">
+      
+      {/* 📱 মোবাইল হেডার (শুধুমাত্র ছোট স্ক্রিনে দেখাবে) */}
+      <header className="lg:hidden flex items-center justify-between px-4 py-3 bg-white border-b border-slate-100 z-40">
+        <div className="flex items-center space-x-3">
+          {/* লোগো/ব্র্যান্ড নাম এখানে দিতে পারেন */}
+          <span className="font-black text-sm text-slate-800 tracking-wide">SecureShare</span>
+        </div>
+        
+        {/* থ্রি-ডট/হ্যামবার্গার মেনু বাটন */}
+        <button 
+          onClick={() => setIsOpen(!isOpen)}
+          className="p-2 text-slate-600 hover:bg-slate-50 rounded-lg outline-none"
+          aria-label="Toggle Menu"
+        >
+          {isOpen ? (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          )}
+        </button>
+      </header>
+
+      {/* 🖥️ ১. ডেস্কটপ সাইডবার (বড় স্ক্রিনে দেখাবে, মোবাইলে হিডেন) */}
+      <aside className="hidden lg:flex w-64 bg-white border-r border-slate-100 flex-col justify-between p-4 shrink-0 h-full">
+        <div className="space-y-6">
+          <div className="px-4 py-2">
+            <span className="font-black text-lg text-slate-800 tracking-wide">SecureShare</span>
+          </div>
+          <NavigationLinks />
         </div>
 
         <div className="pt-4 border-t border-slate-100 flex items-center justify-between px-2 text-xs font-semibold text-slate-500">
@@ -60,14 +91,34 @@ export default function UserLayout({ children }: { children: React.ReactNode }) 
         </div>
       </aside>
 
-      {/* 2. Main Area (Static Header + Dynamic Content) */}
+      {/* 📱 মোবাইল ড্রয়ার (মোবাইলে মেনু ওপেন করলে স্লাইড হয়ে আসবে) */}
+      {isOpen && (
+        <>
+          {/* ব্যাকড্রপ ওভারলে */}
+          <div 
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+          
+          <aside className="fixed top-[57px] left-0 bottom-0 w-64 bg-white z-50 p-4 flex flex-col justify-between border-r border-slate-100 animate-in slide-in-from-left duration-200 lg:hidden">
+            <div className="space-y-6">
+              <NavigationLinks />
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between px-2 text-xs font-semibold text-slate-500">
+              <span>Active Session</span>
+              <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+            </div>
+          </aside>
+        </>
+      )}
+
+      {/* ২. মেইন কন্টেন্ট এরিয়া */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         
-      
-
-        {/* Dynamic Nested Page Content Area */}
-        <main className="flex-1 p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 min-h-full">
+        {/* ডাইনামিক কন্টেন্ট এরিয়া */}
+        <main className="flex-1 p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-6 min-h-full">
             {children}
           </div>
         </main>
